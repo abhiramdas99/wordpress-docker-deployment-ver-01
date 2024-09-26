@@ -1,0 +1,36 @@
+# .dockerignore
+
+# Ignore node_modules and npm log files
+node_modules
+npm-debug.log
+
+# Ignore WordPress core files (if WordPress is installed separately)
+wp-admin/
+wp-includes/
+wp-content/uploads/
+
+# Ignore environment files
+.env
+
+# Ignore logs and debug files
+*.log
+*.tmp
+debug.log
+error_log
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore version control files
+.git
+.gitignore
+
+# Ignore Docker-related files
+docker-compose.yml
+Dockerfile
+
+# Ignore IDE config files
+.idea/
+.vscode/
+*.swp
