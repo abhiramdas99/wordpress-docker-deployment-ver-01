@@ -14,40 +14,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Set up Docker
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v2
-
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
-      - name: Install Docker Compose
-        run: |
-          sudo curl -L "https://github.com/docker/compose/releases/download/$(curl -s https://api.github.com/repos/docker/compose/releases/latest | jq -r .tag_name)/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          
-      # Step 3: Build the Docker images
-      - name: Build WordPress and MariaDB Docker images
-        run: |
-          docker-compose -f docker-compose.yml build
-
-      # Step 4: Push to AWS ECR (optional)
-      - name: Login to AWS ECR
-        run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-          docker tag wordpress:latest <aws_account_id>.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/wordpress:latest
-          docker tag mariadb:latest <aws_account_id>.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mariadb:latest
-          docker push <aws_account_id>.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/wordpress:latest
-          docker push <aws_account_id>.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mariadb:latest
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
       # Step 5: SSH into EC2 and deploy the containers
       - name: SSH and deploy to EC2
         uses: appleboy/ssh-action@v0.1.10
