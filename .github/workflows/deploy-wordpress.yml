@@ -1,0 +1,49 @@
+name: Deploy WordPress to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the latest code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Docker
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+
+      # Step 3: Build the Docker images
+      - name: Build WordPress and MariaDB Docker images
+        run: |
+          docker-compose -f docker-compose.yml build
+
+      # Step 4: Push to AWS ECR (optional)
+      - name: Login to AWS ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          docker tag wordpress:latest <aws_account_id>.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/wordpress:latest
+          docker tag mariadb:latest <aws_account_id>.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mariadb:latest
+          docker push <aws_account_id>.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/wordpress:latest
+          docker push <aws_account_id>.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/mariadb:latest
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      # Step 5: SSH into EC2 and deploy the containers
+      - name: SSH and deploy to EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_INSTANCE_IP }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /path/to/your/app   # Change to your WordPress app's directory
+            docker-compose down    # Stop the running containers (if any)
+            git pull origin main   # Pull the latest changes from GitHub
+            docker-compose up -d   # Start the new containers
